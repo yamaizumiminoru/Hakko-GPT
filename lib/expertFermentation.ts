@@ -237,30 +237,38 @@ function mergeDesignOutput(input: FermentationDesignInput, ruleResult: Fermentat
   const review = expertWarningReview(input, expert, ruleResult.dangerLevel, expertDanger);
   const dangerLevel = mergedDangerLevel(ruleResult.dangerLevel, expertDanger, review);
   const ruleHardNonRecommended = ruleResult.recommendedStarter === NO_HOME_RECOMMENDATION || ruleResult.dangerLevel === "非常に高い";
-  const validExpertHardNonRecommended = isHardNonRecommendedExpert(expert) && !review.onlyContradictedHardWarning;
+  const expertRating = ratingValue(expert.emojiRating, ruleResult.emojiRating);
+
+  if (ruleHardNonRecommended) {
+    return {
+      ...ruleResult,
+      emojiRating: saferRating(ruleResult.emojiRating, expertRating),
+      successLikelihood: "低い",
+      reasoning: unionStrings(ruleResult.reasoning, review.reasoning),
+      safetyNotice: `${ruleResult.safetyNotice} ${review.safetyNotice}`.trim(),
+    };
+  }
+
+  if (review.onlyContradictedHardWarning) return ruleResult;
+
+  const validExpertHardNonRecommended = isHardNonRecommendedExpert(expert);
   const expertStarter = starterValue(expert.recommendedStarter, ruleResult.recommendedStarter);
-  const forceNonRecommended =
-    ruleResult.recommendedStarter === NO_HOME_RECOMMENDATION || dangerLevel === "非常に高い" || review.needsAdditionalReview;
+  const forceNonRecommended = dangerLevel === "非常に高い" || review.needsAdditionalReview;
   const recommendedStarter = forceNonRecommended
     ? NO_HOME_RECOMMENDATION
-    : validExpertHardNonRecommended && !ruleHardNonRecommended
+    : validExpertHardNonRecommended
       ? ruleResult.recommendedStarter
       : expertStarter === NO_HOME_RECOMMENDATION
         ? ruleResult.recommendedStarter
         : expertStarter;
   const additionalReasoning = review.needsAdditionalReview ? [ADDITIONAL_REVIEW_REASON] : [];
   const additionalNotice = review.needsAdditionalReview ? ADDITIONAL_REVIEW_NOTICE : "";
-  const proposalName = ruleHardNonRecommended
-    ? ruleResult.proposalName
-    : review.needsAdditionalReview
-      ? `${ruleResult.proposalName}（追加確認が必要）`
-      : validExpertHardNonRecommended
-        ? ruleResult.proposalName
-        : stringValue(expert.proposalName, ruleResult.proposalName);
-  const expertRating = ratingValue(expert.emojiRating, ruleResult.emojiRating);
-  const emojiRating = ruleHardNonRecommended
-    ? saferRating(ruleResult.emojiRating, expertRating)
-    : ratingForDanger(dangerLevel, review.needsAdditionalReview ? "🤢 風味・失敗リスク高め" : ruleResult.emojiRating);
+  const proposalName = review.needsAdditionalReview
+    ? `${ruleResult.proposalName}（追加確認が必要）`
+    : validExpertHardNonRecommended
+      ? ruleResult.proposalName
+      : stringValue(expert.proposalName, ruleResult.proposalName);
+  const emojiRating = ratingForDanger(dangerLevel, review.needsAdditionalReview ? "🤢 風味・失敗リスク高め" : ruleResult.emojiRating);
 
   return {
     proposalName,
