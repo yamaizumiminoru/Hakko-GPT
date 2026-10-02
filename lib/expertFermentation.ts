@@ -244,8 +244,6 @@ function mergeDesignOutput(input: FermentationDesignInput, ruleResult: Fermentat
       ...ruleResult,
       emojiRating: saferRating(ruleResult.emojiRating, expertRating),
       successLikelihood: "低い",
-      reasoning: unionStrings(ruleResult.reasoning, review.reasoning),
-      safetyNotice: `${ruleResult.safetyNotice} ${review.safetyNotice}`.trim(),
     };
   }
 
